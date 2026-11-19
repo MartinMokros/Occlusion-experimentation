@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Handheld Laser Scanning Explained</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday teaching: a lecture explainer, clear and exact
+   IDEA a field-guide plate of a forest plot at dusk, with the scanner's laser drawing the tree
+   PICTURE a live scene: an operator walks past two trees, a rotating LiDAR head fires pulses, returns become a point cloud; sunlight can be switched off
+   COLOUR deep forest #0f2a20 band, white / near-black ground, laser red #e5322d, leaf green #2f7d5b, height-ramp points
+   TYPE Sora 700 + Inter
+   LAYOUT laptop: title band, full-width scene, controls; then scanner anatomy beside text, active vs passive pair, ToF and phase-shift widgets side by side. Phone: everything stacks */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0b1511);--ink:light-dark(#10201a,#e4eee8);--mut:light-dark(#4a5c54,#9fb3a9);--line:light-dark(#d6e0da,#24352d);--panel:light-dark(#f2f6f3,#12211a);--red:#e5322d;--leaf:light-dark(#2f7d5b,#5cc490);--deep:#0f2a20}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Sora,Inter,sans-serif;letter-spacing:-.02em;line-height:1.08;margin:0;text-wrap:balance}
+h1{font-size:clamp(30px,4.4vw,48px)}
+h2{font-size:clamp(24px,3vw,34px);margin-bottom:12px}
+h3{font-size:20px;margin-bottom:8px}
+p{margin:0 0 12px;max-width:68ch}
+.band{padding-block:clamp(28px,4vw,60px);padding-inline:max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+.hero{background:var(--deep);color:#eaf3ee}
+.hero p{color:#b9d0c4}
+.top{display:flex;flex-wrap:wrap;gap:12px 32px;align-items:end;justify-content:space-between;margin-bottom:20px}
+.top p{margin:0;max-width:52ch}
+.stage{position:relative;aspect-ratio:1000/560;border-radius:14px;overflow:hidden;background:#06111a}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ctrl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+button,select{font:600 15px/1 Inter,sans-serif;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid #3c5f50;background:#163a2c;color:#eaf3ee;cursor:pointer}
+button:hover{background:#1d4a38}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #ffd23f;outline-offset:2px}
+button[aria-pressed=true]{background:#eaf3ee;color:#0f2a20;border-color:#eaf3ee}
+.seg{display:inline-flex;gap:0}.seg button{border-radius:0}.seg button:first-child{border-radius:10px 0 0 10px}.seg button:last-child{border-radius:0 10px 10px 0}
+.read{display:grid;grid-template-columns:repeat(auto-fit,minmax(9em,1fr));gap:12px;margin-top:18px}
+.read div{border-top:1px solid #2f5244;padding-top:8px}
+.read b{display:block;font:700 clamp(20px,2.4vw,26px)/1.1 Sora,sans-serif;color:#fff;white-space:nowrap;font-variant-numeric:tabular-nums}
+.read span{font-size:13px;color:#a9c3b6}
+.note{margin-top:14px;padding:12px 14px;border-radius:10px;background:#163a2c;color:#dcebe3;font-size:15px}
+.key{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:12px;font-size:14px;color:#b9d0c4}
+.key i{display:inline-block;width:22px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,4vw,56px);align-items:start}
+.anat{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(20px,4vw,56px);align-items:center}
+.anat svg{width:100%;height:auto;max-height:560px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:clamp(16px,2.4vw,26px)}
+.panel svg{width:100%;height:auto;display:block;margin:6px 0 12px}
+.eq{font:600 clamp(20px,2.6vw,26px)/1.3 Sora,sans-serif;margin:8px 0 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.fr{display:inline-flex;flex-direction:column;text-align:center;vertical-align:middle}
+.fr>span:first-child{border-bottom:2px solid currentColor;padding:0 6px 2px}
+.fr>span:last-child{padding-top:2px}
+.fig{position:relative;height:190px;margin:8px 0 12px}
+.fig canvas{position:absolute;inset:0;width:100%;height:100%}
+label{font-weight:600;font-size:15px;display:block;margin-bottom:4px}
+input[type=range]{width:100%;accent-color:var(--red);height:44px}
+.vals{display:grid;grid-template-columns:repeat(auto-fit,minmax(8em,1fr));gap:8px 16px;margin:6px 0 12px}
+.vals b{display:block;font:700 20px/1.2 Sora,sans-serif;white-space:nowrap;font-variant-numeric:tabular-nums}
+.vals span{font-size:13px;color:var(--mut)}
+.warn{color:var(--red);font-weight:600;min-height:1.5em;font-size:15px}
+.sm{font-size:14px;color:var(--mut)}
+ul{margin:0 0 12px;padding-left:20px}li{margin-bottom:6px}
+.pselect{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.pselect select{background:var(--panel);color:var(--ink);border-color:var(--line)}
+.lbl{font:600 15px Inter,sans-serif;fill:var(--ink)}
+.lbs{font:400 13px Inter,sans-serif;fill:var(--mut)}
+.spin{transform-origin:200px 118px;animation:sp 1.2s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation:none}}
+.tv{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:clamp(16px,2.6vw,32px);align-items:start}
+.tvst{aspect-ratio:1000/700}
+.side label{margin:0 0 8px;color:#dcebe3}
+.paths{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-bottom:18px}
+.forest{grid-template-columns:repeat(3,minmax(0,1fr))}
+.paths button{padding:8px 12px;line-height:1.2;text-align:left}
+.side .seg{margin-bottom:6px}
+.side .ctrl{margin-top:12px}
+.side .read{grid-template-columns:repeat(2,minmax(0,1fr))}
+.side .read b{font-size:22px}
+.log{width:100%;border-collapse:collapse;font-size:15px;color:#eaf3ee}
+.log th,.log td{padding:8px 10px;border-bottom:1px solid #2f5244;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.log th{font-weight:600;color:#a9c3b6;font-size:13px}
+.log th:first-child,.log td:first-child{text-align:left}
+.log tr:last-child td{color:#fff;font-weight:600}
+@media(max-width:900px){.tv{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.log thead{display:none}.log tr{display:grid;padding-block:10px;border-bottom:1px solid #2f5244}.log td{display:flex;justify-content:space-between;gap:12px;border:0;padding:3px 0;text-align:right}.log td::before{content:attr(data-l);color:#a9c3b6;font-weight:400}}
+@media(max-width:760px){.two,.anat{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<section class="band hero">
+<div class="wrap">
+<div class="top">
+<h1>How a handheld laser scanner measures a tree</h1>
+<p>The rotating head fires laser pulses, times their return and turns each echo into a point. Walk, and the points add up into a 3D tree. Switch the sun off: the scanner keeps working, because it brings its own light.</p>
+</div>
+<div class="stage" id="stage"><canvas id="scene" aria-label="Animated scene: a person walks past two trees holding a laser scanner; laser pulses leave the scanner, hit the trees and ground, and the returns build a point cloud"></canvas></div>
+<div class="ctrl">
+<button id="play" aria-pressed="false">Pause</button>
+<button id="sun" aria-pressed="true">Sunlight on</button>
+<span class="seg" role="group" aria-label="Speed"><button id="sp0" aria-pressed="false">Slow</button><button id="sp1" aria-pressed="true">Normal</button><button id="sp2" aria-pressed="false">Fast</button></span>
+<button id="clr">Clear points</button>
+</div>
+<div class="key"><span><i style="background:#ff3a30"></i>Outgoing pulse</span><span><i style="background:#ffb3ae"></i>Echo returning</span><span><i style="background:linear-gradient(90deg,#1f6feb,#00c2b8,#a6e22e,#ffd23f)"></i>Points, coloured by height</span><span><i style="background:repeating-linear-gradient(90deg,#fff 0 5px,transparent 5px 9px)"></i>Scanner path (SLAM)</span></div>
+<div class="read">
+<div><b id="rp">0</b><span>points recorded</span></div>
+<div><b id="rr">–</b><span>range of last echo</span></div>
+<div><b id="rt">–</b><span>round-trip time, Δt</span></div>
+<div><b id="rw">0 m</b><span>distance walked</span></div>
+</div>
+<p class="note" id="sunnote">Sunlight on: a camera and the scanner both see the tree.</p>
+<p class="sm" style="color:#9fb8ab;margin:0">Light is slowed down about a hundred million times here so you can see it travel. Real pulses are near-infrared (often 905 nm) and invisible; they are drawn red. Pulses that hit nothing (sky) never come back and leave no point.</p>
+</div>
+</section>
+
+<section class="band">
+<div class="wrap anat">
+<svg viewBox="0 0 420 470" role="img" aria-label="Diagram of a handheld mobile laser scanner: rotating LiDAR head on top, body with IMU and computer, grip with battery">
+<defs>
+<linearGradient id="gm" x1="0" x2="1"><stop offset="0" stop-color="#3a4a45"/><stop offset=".45" stop-color="#5d706a"/><stop offset="1" stop-color="#26322e"/></linearGradient>
+<linearGradient id="gw" x1="0" x2="1"><stop offset="0" stop-color="#0b1216"/><stop offset=".5" stop-color="#2b3d48"/><stop offset="1" stop-color="#0b1216"/></linearGradient>
+<linearGradient id="gb" x1="0" x2="1"><stop offset="0" stop-color="#d9dfdc"/><stop offset=".5" stop-color="#f4f7f5"/><stop offset="1" stop-color="#b9c3be"/></linearGradient>
+</defs>
+<ellipse cx="200" cy="452" rx="70" ry="9" fill="var(--line)"/>
+<g class="spin"><path d="M200 118 L405 98 M200 118 L-5 140 M200 118 L215 -10" stroke="#e5322d" stroke-width="2" stroke-dasharray="6 6" opacity=".75"/></g>
+<g transform="rotate(-12 200 120)">
+<rect x="128" y="92" width="144" height="58" rx="10" fill="url(#gm)"/>
+<rect x="128" y="104" width="144" height="26" fill="url(#gw)"/>
+<ellipse cx="200" cy="92" rx="72" ry="14" fill="#6c807a"/>
+<ellipse cx="200" cy="92" rx="52" ry="9" fill="#8aa09a"/>
+<rect x="128" y="104" width="144" height="3" fill="#7fd2ff" opacity=".35"/>
+<rect x="183" y="150" width="34" height="22" fill="#2b3632"/>
+</g>
+<rect x="138" y="176" width="124" height="86" rx="14" fill="url(#gb)" stroke="#9aa6a0"/>
+<rect x="138" y="232" width="124" height="30" rx="0" fill="#c5cdc9" opacity=".6"/>
+<circle cx="242" cy="196" r="5" fill="#35d07f"/>
+<rect x="156" y="190" width="56" height="8" rx="4" fill="#9aa6a0"/>
+<path d="M172 262 h56 l-6 168 a8 8 0 0 1 -8 8 h-28 a8 8 0 0 1 -8 -8 z" fill="#2a3330"/>
+<path d="M200 262 h28 l-6 168 a8 8 0 0 1 -8 8 h-14 z" fill="#1c2321"/>
+<g stroke="#46524d" stroke-width="3" stroke-linecap="round"><path d="M182 300h36M182 318h36M183 336h34M184 354h32M185 372h30"/></g>
+<rect x="226" y="276" width="10" height="26" rx="4" fill="#e5322d"/>
+<rect x="176" y="420" width="48" height="16" rx="6" fill="#56635e"/>
+<g fill="none" stroke="var(--mut)" stroke-width="1.2">
+<path d="M278 114 L330 160"/><path d="M262 210 L330 230"/><path d="M236 290 L330 300"/><path d="M218 400 L330 380"/>
+</g>
+<text x="334" y="160" class="lbl">LiDAR head</text><text x="334" y="177" class="lbs">spins, 360°</text>
+<text x="334" y="230" class="lbl">IMU + PC</text><text x="334" y="247" class="lbs">pose, SLAM</text>
+<text x="334" y="300" class="lbl">Start/stop</text>
+<text x="334" y="380" class="lbl">Grip</text><text x="334" y="397" class="lbs">battery inside</text>
+<text x="10" y="40" class="lbs">laser exits the window</text>
+</svg>
+<div>
+<h2>What it actually looks like</h2>
+<p>A handheld mobile laser scanner is not a torch you point at the tree. It is a spinning LiDAR head on a handle, which sprays pulses all around you while you walk, plus an inertial measurement unit (IMU) and a small computer that work out where the scanner was at every instant.</p>
+<ul>
+<li><b>GeoSLAM ZEB Horizon</b>: a puck-shaped multi-beam LiDAR on top of a handle; also mounts on a pole, backpack or drone.</li>
+<li><b>Leica BLK2GO</b>: a tall wireless wand with a dual-axis LiDAR dome and cameras that colour the points.</li>
+<li><b>Low-cost builds</b>: a compact sensor such as the Livox Mid-360 (about 265 g, 360° × 59° view, around 200,000 points per second, IMU built in) on a 3D-printed handle with a mini computer.</li>
+</ul>
+<p class="sm">The head is usually tilted so its field of view catches the ground, the stems and the crown in one pass.</p>
+</div>
+</div>
+</section>
+
+<section class="band" style="padding-top:0">
+<div class="wrap">
+<h2>Why we call it an active sensor</h2>
+<p>An active sensor sends out its own energy and measures what comes back. A passive sensor, like a camera or a multispectral satellite, only records energy that already exists: reflected sunlight or emitted heat.</p>
+<div class="two" style="margin-top:18px">
+<div class="panel">
+<h3>Passive: camera</h3>
+<svg viewBox="0 0 360 150" aria-hidden="true">
+<circle cx="40" cy="38" r="20" fill="#ffc83d"/>
+<path d="M62 46 L196 96" stroke="#ffc83d" stroke-width="3" stroke-dasharray="7 5"/>
+<path d="M204 92 L300 62" stroke="#ffc83d" stroke-width="3" stroke-dasharray="7 5" opacity=".7"/>
+<rect x="196" y="40" width="12" height="96" fill="#7a5537"/><circle cx="202" cy="44" r="30" fill="var(--leaf)"/>
+<rect x="298" y="46" width="44" height="30" rx="6" fill="var(--ink)"/><circle cx="306" cy="61" r="9" fill="var(--panel)"/>
+</svg>
+<p>Needs the sun. Under a dense canopy, at dusk or at night it gets little or nothing. It sees colour and texture, but distance has to be inferred afterwards (for example by photogrammetry).</p>
+</div>
+<div class="panel">
+<h3>Active: laser scanner</h3>
+<svg viewBox="0 0 360 150" aria-hidden="true">
+<rect x="18" y="64" width="30" height="22" rx="5" fill="var(--ink)"/><rect x="28" y="86" width="10" height="34" rx="3" fill="var(--ink)"/>
+<path d="M50 70 L190 70" stroke="#e5322d" stroke-width="3"/>
+<path d="M190 80 L50 80" stroke="#e5322d" stroke-width="3" stroke-dasharray="6 5" opacity=".6"/>
+<path d="M178 62 l12 8 -12 8" fill="#e5322d"/><path d="M62 72 l-12 8 12 8" fill="#e5322d" opacity=".6"/>
+<rect x="196" y="40" width="12" height="96" fill="#7a5537"/><circle cx="202" cy="44" r="30" fill="var(--leaf)"/>
+<text x="64" y="58" class="lbs">pulse out</text><text x="64" y="104" class="lbs">echo back</text>
+</svg>
+<p>Brings its own light, so it works in shade and in darkness. Because it knows exactly when the pulse left, the return time gives the distance directly: every echo is already a 3D point.</p>
+</div>
+</div>
+<p class="sm" style="margin-top:14px">The trade-offs: an active sensor needs power, has a limited range, must be eye-safe (Class 1 lasers), and the return strength depends on how well bark and leaves reflect at the laser's wavelength.</p>
+</div>
+</section>
+
+<section class="band" style="background:var(--panel)">
+<div class="wrap">
+<h2>Two ways to turn light into distance</h2>
+<div class="two" style="margin-top:14px">
+<div>
+<h3>Pulsed time of flight</h3>
+<div class="eq">d =<span class="fr"><span>c · Δt</span><span>2</span></span></div>
+<p>Fire a short pulse, start a clock, stop it when the echo arrives. Divide by two because the light travels there and back. c ≈ 299,792,458 m/s.</p>
+<div class="fig"><canvas id="tof" aria-label="Emitted and returned pulse on a time axis"></canvas></div>
+<label for="tofd">Distance to the stem: <span id="tofdv">10 m</span></label>
+<input type="range" id="tofd" min="0.5" max="60" step="0.5" value="10">
+<div class="vals"><div><b id="tofdt">66.7 ns</b><span>round-trip time</span></div><div><b>6.67 ps</b><span>timing for 1 mm</span></div></div>
+<p class="sm">Used by almost all mobile and handheld scanners (Velodyne, Ouster, Hesai, Livox) and long-range terrestrial scanners. One pulse can give several echoes, from leaves first and the stem behind.</p>
+</div>
+<div>
+<h3>Phase shift</h3>
+<div class="eq">d =<span class="fr"><span>Δφ</span><span>2π</span></span>·<span class="fr"><span>λ<sub>m</sub></span><span>2</span></span><span style="font-size:.7em;font-weight:500">with λ<sub>m</sub> = c / f<sub>m</sub></span></div>
+<p>Send a continuous beam whose brightness is modulated like a sine wave. The echo comes back delayed, so its wave is shifted. Measure that phase shift Δφ instead of a time.</p>
+<div class="fig"><canvas id="phs" aria-label="Emitted and received modulation waves with phase shift"></canvas></div>
+<div class="pselect"><label for="pf" style="margin:0">Modulation frequency</label><select id="pf"><option value="1">1 MHz</option><option value="10" selected>10 MHz</option><option value="100">100 MHz</option></select></div>
+<label for="phd">Distance to the stem: <span id="phdv">4 m</span></label>
+<input type="range" id="phd" min="0" max="60" step="0.25" value="4">
+<div class="vals"><div><b id="phl">30 m</b><span>wavelength λ<sub>m</sub></span></div><div><b id="phr">15 m</b><span>unambiguous range</span></div><div><b id="php">96°</b><span>phase shift Δφ</span></div><div><b id="phm">4.00 m</b><span>distance read</span></div></div>
+<p class="warn" id="phw"></p>
+<p class="sm">Fast and precise at short range, but the phase repeats every λ<sub>m</sub>/2, so a far target can be mistaken for a near one. Scanners combine several frequencies: a low one for coarse range, a high one for precision. Typical of high-speed terrestrial scanners such as the FARO Focus and Z+F IMAGER.</p>
+</div>
+</div>
+</div>
+</section>
+
+<section class="band">
+<div class="wrap two">
+<div>
+<h2>From one echo to a point in the forest</h2>
+<p>Each echo gives a range r and the beam's angles (θ, φ) inside the scanner. Because the scanner is moving, SLAM (scan matching plus the IMU) estimates its pose T(t) at the moment of each pulse, and the point is placed in one common frame:</p>
+<div class="eq" style="font-size:clamp(17px,2.2vw,22px)">p = T(t) · r · [cosφ cosθ, cosφ sinθ, sinφ]</div>
+</div>
+<div>
+<h3>Why walking helps</h3>
+<p>From one spot, the near sapling hides part of the big stem. As you walk, the beams reach it from new angles and the shadows fill in. That is why handheld scanning is quick in a forest plot: a loop around the plot sees every stem from several sides.</p>
+<p class="sm">Notice too that the upper crown stays sparse: lower branches and leaves block the pulses from below. That is a real limit of below-canopy scanning, and why crown metrics from handheld data need care.</p>
+</div>
+</div>
+</section>
+
+<section class="band hero" id="from-above">
+<div class="wrap">
+<div class="top">
+<h2 style="font-size:clamp(28px,3.6vw,42px);margin:0">Occlusion from above: which sides of the stems did the scanner see?</h2>
+<p>A slice at breast height through a 12.6 m radius plot. Pick a path and a walking speed, press Start, and see how much of each stem's circumference was hit. Each run ends when the path does.</p>
+</div>
+<div class="tv">
+<div>
+<div class="stage tvst"><canvas id="tv" aria-label="Top view of a circular forest plot: stems as circles, an operator walking a chosen path, laser beams, occlusion shadows and per-stem coverage"></canvas></div>
+<div class="key"><span><i style="background:#ff3a30"></i>Laser beams</span><span><i style="background:#ffd23f"></i>Points</span><span><i style="background:#34d399"></i>Side of stem seen</span><span><i style="background:#8a9a92"></i>Never seen</span><span><i style="background:#4f8a3c"></i>Understory shrub (blocks, not measured)</span><span><i style="background:#0b1a14;border:1px solid #6b8a7c;height:8px"></i>Hidden from the scanner right now</span></div>
+</div>
+<div class="side">
+<label>Forest</label>
+<div class="paths forest" role="group" aria-label="Forest type"><button id="tf0">Mature, no understory</button><button id="tf1">Mature + understory</button><button id="tf2">Young, dense</button></div>
+<label>Walking path</label>
+<div class="paths" role="group" aria-label="Walking path"><button id="tp0">Straight transect</button><button id="tp1">Loop around plot</button><button id="tp2">Loop + cross</button><button id="tp3">Zig-zag, 3 lines</button><button id="tp4" style="grid-column:1/-1">Zig-zag, 5 lines</button></div>
+<label>Walking speed</label>
+<span class="seg" role="group" aria-label="Walking speed"><button id="tw0">0.5 m/s</button><button id="tw1">1 m/s</button><button id="tw2">2 m/s</button></span>
+<div class="ctrl"><button id="tgo">Start</button><button id="tend">Run to end</button><button id="tclr">Clear points</button><button id="tsun" aria-pressed="true">Sunlight on</button></div>
+<div class="read">
+<div><b id="tsP">0</b><span>points</span></div>
+<div><b id="tsD">0</b><span>points per metre walked</span></div>
+<div><b id="tsW">0 m</b><span>walked</span></div>
+<div><b id="tsM">0%</b><span>mean stem coverage</span></div>
+<div><b id="tsF">0</b><span>stems seen ≥ 75% around</span></div>
+<div><b id="tsU">0</b><span>stems never seen</span></div>
+</div>
+</div>
+</div>
+<p class="note" id="tvnote"></p>
+<h3 style="margin-top:26px">Runs so far</h3>
+<div class="scroll"><table class="log"><thead><tr><th>Path</th><th>Forest</th><th>Speed</th><th>Length</th><th>Points</th><th>Points per m</th><th>Mean coverage</th><th>Stems ≥ 75%</th><th>Never seen</th></tr></thead><tbody id="tlog"></tbody></table></div>
+<div class="ctrl"><button id="tlogclr">Clear table</button></div>
+<p class="sm" style="color:#9fb8ab;margin-top:12px">The scanner fires the same number of pulses every second, so walking twice as fast leaves about half the points per metre. Stems are drawn larger than life so their sides are visible. Mature stands have 26 measured stems; the young stand has 130 thinner ones. Understory shrubs block pulses but are not scored; range is capped at 20 m. The first row was computed when the page loaded.</p>
+</div>
+</section>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const W0=1000,H0=560,GY=478,SC=0.023,C=299792458;
+let seed=11;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+const gen=(x,h,bw,nb)=>{const top=GY-h,t={x,h,bw,top,br:[],lv:[]};
+for(let i=0;i<nb;i++){const f=i/Math.max(nb-1,1),y=GY-h*(0.4+0.48*f),s=i%2?1:-1,len=h*(0.4-0.2*f)*(0.8+0.4*rnd());
+const ex=x+s*len,ey=y-len*(0.42+0.2*rnd()),w=bw*(0.3-0.16*f)+1.5;t.br.push([x,y,ex,ey,w]);
+for(let j=0;j<15;j++)t.lv.push([ex-s*len*0.45*rnd()+(rnd()-0.5)*len*0.35,ey+(rnd()-0.5)*len*0.45-rnd()*6,(3+rnd()*6)*(0.45+h/700),rnd()]);}
+for(let j=0;j<24;j++)t.lv.push([x+(rnd()-0.5)*h*0.26,top+(rnd()-0.25)*h*0.2,(3+rnd()*6)*(0.45+h/700),rnd()]);
+return t;};
+const trees=[gen(660,390,46,7),gen(330,140,13,4)];
+const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
+const mask=mk(W0,H0),mc=mask.getContext('2d'),art=mk(W0*2,H0*2),ac=art.getContext('2d');ac.scale(2,2);
+const trunk=(g,t)=>{g.beginPath();g.moveTo(t.x-t.bw/2,GY+2);g.lineTo(t.x-t.bw*0.13,t.top+t.h*0.05);g.lineTo(t.x+t.bw*0.13,t.top+t.h*0.05);g.lineTo(t.x+t.bw/2,GY+2);g.closePath();};
+for(const t of trees){
+mc.fillStyle='#000';mc.strokeStyle='#000';mc.lineCap='round';trunk(mc,t);mc.fill();
+for(const b of t.br){mc.lineWidth=b[4]*0.6;mc.beginPath();mc.moveTo(b[0],b[1]);mc.lineTo(b[2],b[3]);mc.stroke();}
+for(const l of t.lv){mc.beginPath();mc.arc(l[0],l[1],l[2]*0.55,0,7);mc.fill();}
+ac.fillStyle='#6b4a2f';trunk(ac,t);ac.fill();ac.save();trunk(ac,t);ac.clip();ac.fillStyle='#4a321f';ac.fillRect(t.x+t.bw*0.08,t.top,t.bw,t.h+4);ac.fillStyle='#8a6444';ac.fillRect(t.x-t.bw/2,t.top,t.bw*0.14,t.h+4);ac.restore();
+ac.strokeStyle='#553a24';ac.lineCap='round';for(const b of t.br){ac.lineWidth=b[4];ac.beginPath();ac.moveTo(b[0],b[1]);ac.lineTo(b[2],b[3]);ac.stroke();}
+const gr=['#24532e','#2f6b3a','#3f8a46','#57a04f'];for(const l of t.lv){ac.fillStyle=gr[(l[3]*4)|0];ac.beginPath();ac.arc(l[0],l[1],l[2],0,7);ac.fill();}
+for(const l of t.lv)if(l[3]>0.6){ac.fillStyle='rgba(190,230,140,.35)';ac.beginPath();ac.arc(l[0]-l[2]*0.3,l[1]-l[2]*0.3,l[2]*0.45,0,7);ac.fill();}}
+const md=mc.getImageData(0,0,W0,H0).data;
+const cast=(sx,sy,a)=>{const dx=Math.cos(a),dy=Math.sin(a);for(let d=4;d<1200;d+=1.1){const x=sx+dx*d,y=sy+dy*d;if(x<0||x>=W0||y<0)return{hit:false,d};if(y>=GY)return{hit:true,x,y:GY,d};if(md[((y|0)*W0+(x|0))*4+3]>100)return{hit:true,x,y,d};}return{hit:false,d:1200};};
+const pc=mk(W0*2,H0*2),pcx=pc.getContext('2d');
+const ramp=[[0,[31,111,235]],[0.3,[0,194,184]],[0.65,[166,226,46]],[1,[255,210,63]]];
+const col=y=>{const h=Math.max(0,Math.min(1,(GY-y)/400));let i=0;while(i<ramp.length-2&&h>ramp[i+1][0])i++;const [a,A]=ramp[i],[b,B]=ramp[i+1],f=(h-a)/(b-a);return`rgb(${A.map((v,j)=>Math.round(v+(B[j]-v)*f)).join(',')})`;};
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const mix=(n,d,t)=>{const a=hex(n),b=hex(d);return`rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')})`;};
+const stars=Array.from({length:70},()=>[rnd()*W0,rnd()*GY*0.75,rnd()*1.4+0.4]);
+const SP=[{n:1,v:5,w:0.25},{n:4,v:15,w:0.6},{n:14,v:40,w:1.4}];
+let sp=1,playing=!matchMedia('(prefers-reduced-motion: reduce)').matches,sun=true,L=1,ox=90,dir=1,ph=0,ang=0,pulses=[],npts=0,walked=0,last=null,traj=[],fc=0;
+const head=()=>[ox+dir*19,GY-66];
+const deposit=(x,y,d)=>{pcx.fillStyle=col(y);pcx.fillRect(x*2-2.2,y*2-2.2,4.4,4.4);npts++;last=d;};
+const fire=instant=>{ang+=0.1931;const [hx,hy]=head(),r=cast(hx,hy,ang);
+if(instant){if(r.hit)deposit(r.x,r.y,r.d);return;}
+pulses.push({sx:hx,sy:hy,dx:Math.cos(ang),dy:Math.sin(ang),r,t:0});};
+const walk=w=>{ox+=dir*w;walked+=w;ph+=w*0.17;if(ox>915)dir=-1;if(ox<85)dir=1;};
+for(let i=0;i<1500;i++){walk(0.6);for(let j=0;j<4;j++)fire(true);if(i%4==0)traj.push(head());}
+const cv=$('#scene'),cx=cv.getContext('2d');
+const size=()=>{const d=devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;cv.width=Math.round(w*d);cv.height=Math.round(h*d);cx.setTransform(d*w/W0,0,0,d*h/H0,0,0);};
+new ResizeObserver(size).observe(cv);size();
+const person=()=>{const hip=GY-38,sh=GY-64,s1=Math.sin(ph)*9;
+cx.lineCap='round';cx.strokeStyle=mix('#0a0f0c','#1d2a24',L);cx.lineWidth=7;
+cx.beginPath();cx.moveTo(ox,hip);cx.lineTo(ox+s1,GY-1);cx.moveTo(ox,hip);cx.lineTo(ox-s1,GY-1);cx.stroke();
+cx.fillStyle=mix('#1a2e45','#2f5f8a',L);cx.beginPath();cx.roundRect(ox-8,sh-4,16,30,6);cx.fill();
+cx.fillStyle=mix('#3a2a20','#c58f6a',L);cx.beginPath();cx.arc(ox,sh-12,7,0,7);cx.fill();
+const [hx,hy]=head();cx.strokeStyle=mix('#1a2e45','#2f5f8a',L);cx.lineWidth=5;cx.beginPath();cx.moveTo(ox,sh+2);cx.lineTo(hx-dir*2,hy+13);cx.stroke();
+cx.fillStyle='#2a3330';cx.fillRect(hx-2.5,hy+4,5,15);cx.fillStyle='#e9eeeb';cx.fillRect(hx-6,hy-1,12,6);
+cx.save();cx.translate(hx,hy-3);cx.rotate(-dir*0.2);cx.fillStyle='#55665f';cx.beginPath();cx.roundRect(-6,-4,12,8,2);cx.fill();cx.fillStyle='#0d1418';cx.fillRect(-6,-1.5,12,3);cx.restore();
+cx.fillStyle='#ff3a30';cx.beginPath();cx.arc(hx,hy-3,1.6,0,7);cx.fill();};
+const render=()=>{
+const g=cx.createLinearGradient(0,0,0,GY);g.addColorStop(0,mix('#050d15','#7db5d6',L));g.addColorStop(1,mix('#10222e','#d7e9e4',L));cx.fillStyle=g;cx.fillRect(0,0,W0,GY);
+if(L<0.95){cx.fillStyle=`rgba(255,255,255,${(1-L)*0.8})`;for(const s of stars){cx.fillRect(s[0],s[1],s[2],s[2]);}}
+if(L>0.02){cx.fillStyle=`rgba(255,226,120,${L*0.35})`;cx.beginPath();cx.arc(140,92,46,0,7);cx.fill();cx.fillStyle=`rgba(255,214,80,${L})`;cx.beginPath();cx.arc(140,92,28,0,7);cx.fill();}
+cx.fillStyle=mix('#0e160d','#5f6e37',L);cx.fillRect(0,GY,W0,H0-GY);cx.fillStyle=mix('#142112','#7a8a45',L);cx.fillRect(0,GY,W0,5);
+cx.globalAlpha=0.07+0.93*L;cx.drawImage(art,0,0,W0,H0);cx.globalAlpha=1;
+cx.drawImage(pc,0,0,W0,H0);
+if(traj.length>1){cx.setLineDash([5,5]);cx.strokeStyle=L>0.5?'rgba(20,40,30,.65)':'rgba(255,255,255,.6)';cx.lineWidth=1.6;cx.beginPath();traj.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.stroke();cx.setLineDash([]);}
+cx.lineWidth=1.8;
+for(const p of pulses){const r=p.r;if(p.t<=r.d){const t0=Math.max(0,p.t-46);cx.strokeStyle='rgba(255,58,48,.95)';cx.beginPath();cx.moveTo(p.sx+p.dx*t0,p.sy+p.dy*t0);cx.lineTo(p.sx+p.dx*p.t,p.sy+p.dy*p.t);cx.stroke();}
+else{const b=2*r.d-p.t,t1=Math.min(r.d,b+46);cx.strokeStyle='rgba(255,179,174,.85)';cx.beginPath();cx.moveTo(p.sx+p.dx*b,p.sy+p.dy*b);cx.lineTo(p.sx+p.dx*t1,p.sy+p.dy*t1);cx.stroke();cx.fillStyle='#fff';cx.beginPath();cx.arc(r.x,r.y,2.4,0,7);cx.fill();}}
+person();};
+const ns=d=>2*d/C*1e9;
+const readout=()=>{$('#rp').textContent=npts.toLocaleString('en-GB');$('#rw').textContent=(walked*SC).toFixed(1)+' m';
+if(last){const m=last*SC;$('#rr').textContent=m.toFixed(2)+' m';$('#rt').textContent=ns(m).toFixed(1)+' ns';}};
+const step=()=>{const S=SP[sp];walk(S.w);for(let j=0;j<S.n;j++)fire(false);
+pulses=pulses.filter(p=>{p.t+=S.v;if(p.r.hit){if(p.t>=2*p.r.d){deposit(p.r.x,p.r.y,p.r.d);return false;}return true;}return p.t<p.r.d+46;});
+if(fc%4==0){traj.push(head());if(traj.length>900)traj.shift();}};
+const loop=()=>{fc++;L+=((sun?1:0)-L)*0.05;if(playing)step();render();if(fc%8==0)readout();requestAnimationFrame(loop);};
+readout();loop();
+const pb=$('#play');const setPlay=()=>{pb.textContent=playing?'Pause':'Play';pb.setAttribute('aria-pressed',String(!playing));};setPlay();
+pb.onclick=()=>{playing=!playing;setPlay();};
+$('#sun').onclick=e=>{sun=!sun;e.currentTarget.textContent=sun?'Sunlight on':'Sunlight off';e.currentTarget.setAttribute('aria-pressed',String(sun));
+$('#sunnote').textContent=sun?'Sunlight on: a camera and the scanner both see the tree.':'Sunlight off: a camera would now record almost nothing. The scanner keeps adding points, because it supplies its own light. That is what makes it an active sensor.';};
+[0,1,2].forEach(i=>$('#sp'+i).onclick=()=>{sp=i;[0,1,2].forEach(j=>$('#sp'+j).setAttribute('aria-pressed',String(i==j)));});
+$('#clr').onclick=()=>{pcx.clearRect(0,0,pc.width,pc.height);npts=0;last=null;traj=[];walked=0;readout();$('#rr').textContent='–';$('#rt').textContent='–';};
+const prep=c=>{const d=devicePixelRatio||1,W=c.clientWidth,H=c.clientHeight;c.width=Math.round(W*d);c.height=Math.round(H*d);const g=c.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,W,H);return[g,W,H,getComputedStyle(document.body).color];};
+const arrow=(g,x1,x2,y,ink,txt)=>{g.strokeStyle=ink;g.fillStyle=ink;g.lineWidth=1.5;g.beginPath();g.moveTo(x1,y);g.lineTo(x2,y);g.stroke();
+for(const [x,s] of [[x1,1],[x2,-1]]){g.beginPath();g.moveTo(x,y);g.lineTo(x+s*7,y-4);g.lineTo(x+s*7,y+4);g.fill();}
+g.font='600 14px Inter,sans-serif';g.textAlign='center';g.fillText(txt,Math.max(60,(x1+x2)/2),y-9);};
+const tof=$('#tof'),tofd=$('#tofd');
+const drawTof=()=>{const d=+tofd.value,dt=ns(d);$('#tofdv').textContent=d+' m';$('#tofdt').textContent=dt.toFixed(1)+' ns';
+const [g,W,H,ink]=prep(tof),m=14,base=H-34,T=420,X=t=>m+(W-2*m)*t/T;
+g.strokeStyle=ink;g.globalAlpha=0.4;g.lineWidth=1;g.beginPath();g.moveTo(m,base);g.lineTo(W-m,base);g.stroke();g.globalAlpha=1;
+g.font='13px Inter,sans-serif';g.fillStyle=ink;g.textAlign='center';const stepT=W<520?200:100;for(let t=0;t<=400;t+=stepT){g.fillText(t+' ns',Math.min(W-m-20,Math.max(m+16,X(t))),base+20);}
+const pulse=(t0,amp,c)=>{g.strokeStyle=c;g.lineWidth=2.5;g.beginPath();for(let x=m;x<=W-m;x++){const t=(x-m)/(W-2*m)*T,y=base-amp*Math.exp(-(((t-t0)/3.2)**2));x==m?g.moveTo(x,y):g.lineTo(x,y);}g.stroke();};
+const a2=Math.max(0.18,1/(1+d/12))*(H-80);pulse(6,H-80,'#e5322d');pulse(6+dt,a2,'#2f9e74');
+arrow(g,X(6),X(6+dt),34,ink,'Δt = '+dt.toFixed(1)+' ns');
+g.textAlign='left';g.fillStyle='#e5322d';g.fillText('emitted',X(6)+8,base-(H-80)+14);g.fillStyle='#2f9e74';g.fillText('echo',Math.min(W-m-40,X(6+dt)+8),base-a2+8);};
+tofd.oninput=drawTof;new ResizeObserver(drawTof).observe(tof);
+const phs=$('#phs'),phd=$('#phd'),pf=$('#pf');
+const drawPh=()=>{const d=+phd.value,f=+pf.value*1e6,lam=C/f,R=lam/2,dphi=((4*Math.PI*f*d/C)%(2*Math.PI)+2*Math.PI)%(2*Math.PI),dm=dphi/(2*Math.PI)*R;
+const fm=v=>v>=100?v.toFixed(0):v>=10?v.toFixed(1):v.toFixed(2);
+$('#phdv').textContent=d+' m';$('#phl').textContent=fm(lam)+' m';$('#phr').textContent=fm(R)+' m';$('#php').textContent=Math.round(dphi*180/Math.PI)+'°';$('#phm').textContent=dm.toFixed(2)+' m';
+$('#phw').textContent=d>=R?`Ambiguous: the true ${d} m reads as ${dm.toFixed(2)} m, because it is more than ${fm(R)} m away. Choose a lower frequency.`:'';
+const [g,W,H,ink]=prep(phs),m=14,mid=H/2+12,A=(H-70)/2,P=(W-2*m)/2,X=u=>m+u*P;
+g.strokeStyle=ink;g.globalAlpha=0.3;g.lineWidth=1;g.beginPath();g.moveTo(m,mid);g.lineTo(W-m,mid);g.stroke();g.globalAlpha=1;
+const wave=(sh,amp,c)=>{g.strokeStyle=c;g.lineWidth=2.5;g.beginPath();for(let x=m;x<=W-m;x++){const u=(x-m)/P,y=mid-amp*Math.sin(2*Math.PI*u-sh);x==m?g.moveTo(x,y):g.lineTo(x,y);}g.stroke();};
+wave(0,A,'#e5322d');wave(dphi,A*0.6,'#2f9e74');
+const u1=0.25,u2=0.25+dphi/(2*Math.PI);g.setLineDash([3,4]);g.strokeStyle=ink;g.globalAlpha=0.5;g.beginPath();g.moveTo(X(u1),mid-A);g.lineTo(X(u1),28);g.moveTo(X(u2),mid-A*0.6);g.lineTo(X(u2),28);g.stroke();g.setLineDash([]);g.globalAlpha=1;
+if(dphi>0.05)arrow(g,X(u1),X(u2),28,ink,'Δφ = '+Math.round(dphi*180/Math.PI)+'°');
+g.font='13px Inter,sans-serif';g.textAlign='left';g.fillStyle='#e5322d';g.fillText('emitted',m,H-8);g.fillStyle='#2f9e74';g.fillText('received',m+72,H-8);g.fillStyle=ink;g.textAlign='right';g.fillText('two modulation periods',W-m,H-8);};
+phd.oninput=drawPh;pf.onchange=drawPh;new ResizeObserver(drawPh).observe(phs);
+}
+</script>
+<script>
+{
+const $=s=>document.querySelector(s);
+const W=1000,H=700,U=12.62/290,CX=500,CY=350,PR=290,MAXR=20/(12.62/290),NB=36,NP=14,TAU=Math.PI*2;
+let seed=29;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+const FOR=['Mature, no understory','Mature + understory','Young, dense'];
+const stand=i=>{seed=i==2?71:29;const T=[];
+const add=(n,rf,gap,m)=>{let g=0,c=0;while(c<n&&g++<30000){const a=rnd()*TAU,rr=Math.sqrt(rnd())*(PR-24),x=CX+Math.cos(a)*rr,y=CY+Math.sin(a)*rr,r=rf();
+if(T.every(t=>Math.hypot(t.x-x,t.y-y)>t.r+r+gap)){T.push({x,y,r,m,bins:new Uint16Array(NB)});c++;}}};
+if(i<2)add(26,()=>6+rnd()**1.5*11,26,true);
+if(i==1){seed=53;add(80,()=>2.5+rnd()*3.5,5,false);}
+if(i==2)add(130,()=>2.5+rnd()*3.5,8,true);
+return T;};
+let fi=0,trees=stand(0);const meas=()=>trees.filter(t=>t.m);
+const circ=(r,a0,n=144)=>Array.from({length:n+1},(_,i)=>{const a=a0+i/n*TAU;return[CX+Math.cos(a)*r,CY+Math.sin(a)*r];});
+const PATHS=[{name:'Straight transect',pts:[[120,350],[880,350]]},{name:'Loop around plot',pts:circ(318,Math.PI)},{name:'Loop + cross',pts:[...circ(318,Math.PI),[818,350]]},{name:'Zig-zag, 3 lines',pts:[[170,205],[830,205],[830,350],[170,350],[170,495],[830,495]]},{name:'Zig-zag, 5 lines',pts:[[170,60],[830,60],[830,205],[170,205],[170,350],[830,350],[830,495],[170,495],[170,640],[830,640]]}];
+for(const p of PATHS){const L=[0];for(let i=1;i<p.pts.length;i++)L.push(L[i-1]+Math.hypot(p.pts[i][0]-p.pts[i-1][0],p.pts[i][1]-p.pts[i-1][1]));p.L=L;p.len=L[L.length-1];}
+const SPD=[{l:'0.5 m/s',v:0.05/U},{l:'1 m/s',v:0.1/U},{l:'2 m/s',v:0.2/U}];
+const posAt=(p,s)=>{let i=1;while(i<p.L.length-1&&p.L[i]<s)i++;const a=p.pts[i-1],b=p.pts[i],sg=(p.L[i]-p.L[i-1])||1,f=Math.min(1,Math.max(0,(s-p.L[i-1])/sg));return[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,Math.atan2(b[1]-a[1],b[0]-a[0]),i];};
+const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
+const pc=mk(W*2,H*2),pcx=pc.getContext('2d');pcx.fillStyle='#ffd23f';
+const floor=mk(W,H),fx=floor.getContext('2d');for(let i=0;i<900;i++){fx.fillStyle=['#8f9c62','#a7ad6c','#7c8a55','#b8a46a'][(rnd()*4)|0];fx.beginPath();fx.ellipse(rnd()*W,rnd()*H,1+rnd()*4,1+rnd()*2,rnd()*3,0,TAU);fx.fill();}
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const mix=(n,d,t)=>{const a=hex(n),b=hex(d);return`rgb(${a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')})`;};
+let pi=0,si=1,s=0,run=false,done=false,npts=0,ang=0,beams=[],sun=true,L=1,runs=[];
+const fire=(sx,sy,a)=>{const dx=Math.cos(a),dy=Math.sin(a);let best=MAXR,ht=null;
+for(const t of trees){const fx=sx-t.x,fy=sy-t.y,b=fx*dx+fy*dy,c=fx*fx+fy*fy-t.r*t.r,D=b*b-c;if(D<0)continue;const q=-b-Math.sqrt(D);if(q>0&&q<best){best=q;ht=t;}}
+const x=sx+dx*best,y=sy+dy*best;
+if(ht){pcx.fillRect(x*2-1.5,y*2-1.5,3,3);if(ht.m)ht.bins[Math.floor(((Math.atan2(y-ht.y,x-ht.x)+TAU)%TAU)/TAU*NB)%NB]++;npts++;}
+return[sx,sy,x,y];};
+const stats=()=>{const cov=meas().map(t=>t.bins.reduce((a,b)=>a+(b>0),0)/NB);return{m:cov.reduce((a,b)=>a+b,0)/cov.length,f:cov.filter(c=>c>=0.75).length,u:cov.filter(c=>c===0).length};};
+const tick=()=>{const P=PATHS[pi];s=Math.min(P.len,s+SPD[si].v);const [x,y]=posAt(P,s);beams=[];
+for(let j=0;j<NP;j++){ang+=TAU/NP+0.037;beams.push(fire(x,y,ang));}
+if(s>=P.len)finish();};
+const fmt=n=>n.toLocaleString('en-GB');
+const finish=()=>{run=false;done=true;const st=stats(),P=PATHS[pi],m=P.len*U;
+runs.push([P.name,FOR[fi],SPD[si].l,m.toFixed(0)+' m',fmt(npts),fmt(Math.round(npts/m)),Math.round(st.m*100)+'%',st.f+' / '+meas().length,String(st.u)]);log();
+$('#tvnote').textContent=`${FOR[fi]}, ${P.name.toLowerCase()} at ${SPD[si].l}: ${st.f} of ${meas().length} stems seen at least 75% of the way round, ${st.u} never seen, ${fmt(Math.round(npts/m))} points per metre. Grey arcs are the sides the laser never reached.`;btns();};
+const heads=['Path','Forest','Speed','Length','Points','Points per m','Mean coverage','Stems ≥ 75%','Never seen'];
+const log=()=>{$('#tlog').innerHTML=runs.map(r=>'<tr>'+r.map((c,i)=>`<td data-l="${heads[i]}">${c}</td>`).join('')+'</tr>').join('');};
+const reset=()=>{pcx.clearRect(0,0,pc.width,pc.height);for(const t of trees)t.bins.fill(0);s=0;npts=0;done=false;run=false;beams=[];
+$('#tvnote').textContent=`${FOR[fi]}: ${meas().length} measured stems${fi==1?' plus '+(trees.length-meas().length)+' understory shrubs':''}. ${PATHS[pi].name}, ${(PATHS[pi].len*U).toFixed(0)} m long, walking at ${SPD[si].l}. Press Start.`;btns();};
+const toEnd=()=>{let g=0;while(!done&&g++<20000)tick();};
+const cv=$('#tv'),cx=cv.getContext('2d');let k=1;
+const size=()=>{const d=devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;cv.width=Math.round(w*d);cv.height=Math.round(h*d);k=w/W;cx.setTransform(d*w/W,0,0,d*h/H,0,0);};
+new ResizeObserver(size).observe(cv);size();
+const poly=(pts,n)=>{cx.beginPath();pts.slice(0,n).forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));};
+const render=()=>{const P=PATHS[pi],[x,y,hd,seg]=posAt(P,s),dk=L<0.5;
+cx.fillStyle=mix('#09140f','#c3cd97',L);cx.fillRect(0,0,W,H);cx.globalAlpha=L*0.6;cx.drawImage(floor,0,0);cx.globalAlpha=1;
+const line=dk?'rgba(230,240,235,':'rgba(20,45,35,';
+cx.setLineDash([8,8]);cx.lineWidth=1.5/k;cx.strokeStyle=line+'.45)';cx.beginPath();cx.arc(CX,CY,PR,0,TAU);cx.stroke();
+cx.strokeStyle=line+'.35)';cx.lineWidth=2;poly(P.pts,P.pts.length);cx.stroke();cx.setLineDash([]);
+cx.strokeStyle=dk?'rgba(255,255,255,.85)':'rgba(15,42,32,.85)';cx.lineWidth=3;poly(P.pts,seg);cx.lineTo(x,y);cx.stroke();
+cx.save();cx.beginPath();cx.arc(x,y,MAXR,0,TAU);cx.clip();cx.beginPath();
+for(const t of trees){const dx=t.x-x,dy=t.y-y,d=Math.hypot(dx,dy);if(d<=t.r+1||d>MAXR+t.r)continue;const a0=Math.atan2(dy,dx),b=Math.asin(t.r/d),tl=Math.sqrt(d*d-t.r*t.r);
+const pt=(a,l)=>[x+Math.cos(a)*l,y+Math.sin(a)*l],A=pt(a0-b,tl),B=pt(a0-b,1400),C2=pt(a0+b,1400),D=pt(a0+b,tl);cx.moveTo(A[0],A[1]);cx.lineTo(B[0],B[1]);cx.lineTo(C2[0],C2[1]);cx.lineTo(D[0],D[1]);cx.closePath();}
+cx.fillStyle=dk?'rgba(0,0,0,.45)':'rgba(11,26,20,.28)';cx.fill();cx.restore();
+cx.strokeStyle=line+'.25)';cx.lineWidth=1;cx.beginPath();cx.arc(x,y,MAXR,0,TAU);cx.stroke();
+if(run){cx.strokeStyle='rgba(255,58,48,.55)';cx.lineWidth=1.2;cx.beginPath();for(const b of beams){cx.moveTo(b[0],b[1]);cx.lineTo(b[2],b[3]);}cx.stroke();}
+cx.drawImage(pc,0,0,W,H);
+for(const t of trees){if(!t.m){cx.globalAlpha=0.25+0.75*L;cx.fillStyle='#4f8a3c';cx.beginPath();cx.arc(t.x,t.y,t.r,0,TAU);cx.fill();cx.fillStyle='#7fb85a';cx.beginPath();cx.arc(t.x-t.r*0.3,t.y-t.r*0.3,t.r*0.45,0,TAU);cx.fill();cx.globalAlpha=1;continue;}
+const sm=t.r<7;cx.globalAlpha=0.2+0.8*L;cx.fillStyle='#7a5537';cx.beginPath();cx.arc(t.x,t.y,t.r,0,TAU);cx.fill();cx.fillStyle='#5a3c25';cx.beginPath();cx.arc(t.x+t.r*0.2,t.y+t.r*0.2,t.r*0.65,0,TAU);cx.fill();cx.globalAlpha=1;
+for(let b=0;b<NB;b++){const on=t.bins[b]>0;cx.strokeStyle=on?'#34d399':'rgba(138,154,146,.9)';cx.lineWidth=on?(sm?2.6:4):(sm?1.1:1.6);cx.beginPath();cx.arc(t.x,t.y,t.r+(sm?2.6:4),b/NB*TAU+0.02,(b+1)/NB*TAU-0.02);cx.stroke();}}
+cx.fillStyle='#2f5f8a';cx.beginPath();cx.ellipse(x,y,7,11,hd,0,TAU);cx.fill();cx.fillStyle='#c58f6a';cx.beginPath();cx.arc(x,y,5,0,TAU);cx.fill();
+cx.fillStyle='#ff3a30';cx.beginPath();cx.arc(x+Math.cos(hd)*11,y+Math.sin(hd)*11,3.2,0,TAU);cx.fill();
+const fs=13/k;cx.font=`600 ${fs}px Inter,sans-serif`;cx.fillStyle=dk?'#eaf3ee':'#10201a';cx.strokeStyle=dk?'#eaf3ee':'#10201a';cx.lineWidth=2/k;
+cx.beginPath();cx.moveTo(24,H-24);cx.lineTo(24+5/U,H-24);cx.stroke();cx.fillText('5 m',24,H-24-fs*0.6);};
+const read=()=>{const st=stats(),m=s*U;$('#tsP').textContent=fmt(npts);$('#tsD').textContent=m>0?fmt(Math.round(npts/m)):'0';$('#tsW').textContent=m.toFixed(1)+' / '+(PATHS[pi].len*U).toFixed(0)+' m';
+$('#tsM').textContent=Math.round(st.m*100)+'%';$('#tsF').textContent=st.f+' / '+meas().length;$('#tsU').textContent=st.u;};
+const btns=()=>{$('#tgo').textContent=run?'Pause':done?'Run again':s>0?'Resume':'Start';
+PATHS.forEach((_,i)=>$('#tp'+i).setAttribute('aria-pressed',String(i==pi)));FOR.forEach((_,i)=>$('#tf'+i).setAttribute('aria-pressed',String(i==fi)));SPD.forEach((_,i)=>$('#tw'+i).setAttribute('aria-pressed',String(i==si)));};
+let fc=0;const loop=()=>{fc++;L+=((sun?1:0)-L)*0.05;if(run)tick();render();if(fc%6==0)read();requestAnimationFrame(loop);};
+reset();toEnd();read();loop();
+$('#tgo').onclick=()=>{if(done)reset();run=!run;btns();};
+$('#tend').onclick=()=>{if(done)reset();toEnd();read();};
+$('#tclr').onclick=()=>{reset();read();};
+FOR.forEach((_,i)=>$('#tf'+i).onclick=()=>{fi=i;trees=stand(i);reset();read();});
+PATHS.forEach((_,i)=>$('#tp'+i).onclick=()=>{pi=i;reset();read();});
+SPD.forEach((_,i)=>$('#tw'+i).onclick=()=>{si=i;reset();read();});
+$('#tsun').onclick=e=>{sun=!sun;e.currentTarget.textContent=sun?'Sunlight on':'Sunlight off';e.currentTarget.setAttribute('aria-pressed',String(sun));};
+$('#tlogclr').onclick=()=>{runs=[];log();};
+}
+</script>
+</body>
+</html>
